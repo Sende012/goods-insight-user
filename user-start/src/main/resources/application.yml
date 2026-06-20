@@ -1,0 +1,47 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: goods-insight-user
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/goods_insight_user?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: Zsd123...
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.sende.user
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# Dubbo 配置
+dubbo:
+  application:
+    name: goods-insight-user
+    qos-enable: false
+  registry:
+    address: nacos://127.0.0.1:8848
+    group: DEFAULT_GROUP
+  protocol:
+    name: dubbo
+    port: 20880
+  scan:
+    base-packages: com.sende.user.service.impl
+  consumer:
+    timeout: 5000
+    check: false
+
+# JWT 配置
+app:
+  jwt:
+    # 生产环境务必通过环境变量注入，至少 32 位
+    secret: ${APP_JWT_SECRET:dev-secret-key-please-change-in-production-min-32-chars}
+    expire-seconds: 86400   # 1 天
+
+logging:
+  level:
+    com.sende.user: debug
+    org.apache.dubbo: info

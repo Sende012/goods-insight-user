@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sende.user.dao.mapper.WorkspaceMapper">
+
+    <resultMap id="BaseResultMap" type="com.sende.user.dao.dataobject.WorkspaceDO">
+        <id     column="id"              property="id"/>
+        <result column="workspace_name"  property="workspaceName"/>
+        <result column="workspace_code"  property="workspaceCode"/>
+        <result column="owner_user_id"   property="ownerUserId"/>
+        <result column="plan_type"       property="planType"/>
+        <result column="status"          property="status"/>
+        <result column="created_by"      property="createdBy"/>
+        <result column="updated_by"      property="updatedBy"/>
+        <result column="created_time"    property="createdTime"/>
+        <result column="updated_time"    property="updatedTime"/>
+        <result column="is_deleted"      property="isDeleted"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.sende.user.dao.dataobject.WorkspaceDO"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO workspace (workspace_name, workspace_code, owner_user_id, plan_type, status, created_by, updated_by)
+        VALUES (#{workspaceName}, #{workspaceCode}, #{ownerUserId}, #{planType}, #{status}, #{createdBy}, #{updatedBy})
+    </insert>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT * FROM workspace WHERE id = #{id} AND is_deleted = 0
+    </select>
+
+    <select id="selectByCode" resultMap="BaseResultMap">
+        SELECT * FROM workspace WHERE workspace_code = #{workspaceCode} AND is_deleted = 0 LIMIT 1
+    </select>
+
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT w.* FROM workspace w
+        INNER JOIN workspace_user wu ON wu.workspace_id = w.id
+        WHERE wu.user_id = #{userId} AND w.is_deleted = 0
+        ORDER BY w.id ASC
+    </select>
+
+    <update id="updateById" parameterType="com.sende.user.dao.dataobject.WorkspaceDO">
+        UPDATE workspace
+        <set>
+            <if test="workspace.workspaceName != null">workspace_name = #{workspace.workspaceName},</if>
+            <if test="workspace.workspaceCode != null">workspace_code = #{workspace.workspaceCode},</if>
+            <if test="workspace.ownerUserId != null">owner_user_id = #{workspace.ownerUserId},</if>
+            <if test="workspace.planType != null">plan_type = #{workspace.planType},</if>
+            <if test="workspace.status != null">status = #{workspace.status},</if>
+            updated_by = #{workspace.updatedBy}
+        </set>
+        WHERE id = #{workspace.id} AND is_deleted = 0
+    </update>
+
+    <update id="softDelete">
+        UPDATE workspace SET is_deleted = 1, status = 0, updated_by = #{updatedBy}
+        WHERE id = #{id} AND is_deleted = 0
+    </update>
+
+</mapper>

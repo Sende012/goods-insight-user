@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sende.user.dao.mapper.WorkspaceUserMapper">
+
+    <resultMap id="BaseResultMap" type="com.sende.user.dao.dataobject.WorkspaceUserDO">
+        <id     column="id"            property="id"/>
+        <result column="workspace_id"  property="workspaceId"/>
+        <result column="user_id"       property="userId"/>
+        <result column="role_code"     property="roleCode"/>
+        <result column="created_time"  property="createdTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.sende.user.dao.dataobject.WorkspaceUserDO"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO workspace_user (workspace_id, user_id, role_code)
+        VALUES (#{workspaceId}, #{userId}, #{roleCode})
+    </insert>
+
+    <delete id="deleteByWorkspaceAndUser">
+        DELETE FROM workspace_user
+        WHERE workspace_id = #{workspaceId} AND user_id = #{userId}
+    </delete>
+
+    <select id="selectByWorkspaceId" resultMap="BaseResultMap">
+        SELECT * FROM workspace_user
+        WHERE workspace_id = #{workspaceId}
+        ORDER BY id ASC
+    </select>
+
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT * FROM workspace_user
+        WHERE user_id = #{userId}
+        ORDER BY id ASC
+    </select>
+
+    <select id="selectOne" resultMap="BaseResultMap">
+        SELECT * FROM workspace_user
+        WHERE workspace_id = #{workspaceId} AND user_id = #{userId}
+        LIMIT 1
+    </select>
+
+</mapper>

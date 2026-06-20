@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sende.user.dao.mapper.SysUserMapper">
+
+    <resultMap id="BaseResultMap" type="com.sende.user.dao.dataobject.SysUserDO">
+        <id     column="id"              property="id"/>
+        <result column="username"        property="username"/>
+        <result column="email"           property="email"/>
+        <result column="password"        property="password"/>
+        <result column="avatar"          property="avatar"/>
+        <result column="status"          property="status"/>
+        <result column="last_login_time" property="lastLoginTime"/>
+        <result column="created_by"      property="createdBy"/>
+        <result column="updated_by"      property="updatedBy"/>
+        <result column="created_time"    property="createdTime"/>
+        <result column="updated_time"    property="updatedTime"/>
+        <result column="is_deleted"      property="isDeleted"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.sende.user.dao.dataobject.SysUserDO"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_user (username, email, password, avatar, status, created_by, updated_by)
+        VALUES (#{username}, #{email}, #{password}, #{avatar}, #{status}, #{createdBy}, #{updatedBy})
+    </insert>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT * FROM sys_user WHERE id = #{id} AND is_deleted = 0
+    </select>
+
+    <select id="selectByUsername" resultMap="BaseResultMap">
+        SELECT * FROM sys_user WHERE username = #{username} AND is_deleted = 0 LIMIT 1
+    </select>
+
+    <select id="selectByEmail" resultMap="BaseResultMap">
+        SELECT * FROM sys_user WHERE email = #{email} AND is_deleted = 0 LIMIT 1
+    </select>
+
+    <select id="selectByWorkspaceId" resultMap="BaseResultMap">
+        SELECT u.* FROM sys_user u
+        INNER JOIN workspace_user wu ON wu.user_id = u.id
+        WHERE wu.workspace_id = #{workspaceId} AND u.is_deleted = 0
+        ORDER BY u.id ASC
+    </select>
+
+    <update id="updateById" parameterType="com.sende.user.dao.dataobject.SysUserDO">
+        UPDATE sys_user
+        <set>
+            <if test="user.username != null">username = #{user.username},</if>
+            <if test="user.email != null">email = #{user.email},</if>
+            <if test="user.password != null">password = #{user.password},</if>
+            <if test="user.avatar != null">avatar = #{user.avatar},</if>
+            <if test="user.status != null">status = #{user.status},</if>
+            updated_by = #{user.updatedBy}
+        </set>
+        WHERE id = #{user.id} AND is_deleted = 0
+    </update>
+
+    <update id="softDelete">
+        UPDATE sys_user SET is_deleted = 1, status = 0, updated_by = #{updatedBy}
+        WHERE id = #{id} AND is_deleted = 0
+    </update>
+
+    <update id="updateLastLoginTime">
+        UPDATE sys_user SET last_login_time = NOW(3) WHERE id = #{id} AND is_deleted = 0
+    </update>
+
+</mapper>
