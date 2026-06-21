@@ -3,7 +3,10 @@ package com.sende.user.service.util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
@@ -12,17 +15,20 @@ import java.util.Map;
 
 /**
  * JWT 工具（HS256，对称密钥）
+ *
+ * 注意：使用 JJWT 0.11+ API，secret 直接当字节数组传入（不做 base64 解码），
+ * 避免标准 Base64 字符集不识别 '-' / '_' 的问题。
  */
 public final class JwtUtil {
 
-    private final String secret;
+    private final SecretKey key;
     private final long expireMillis;
 
     public JwtUtil(String secret, long expireSeconds) {
-        if (secret == null || secret.length() < 32) {
-            throw new IllegalArgumentException("JWT secret 长度至少 32 位");
+        if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalArgumentException("JWT secret 字节长度至少 32 位");
         }
-        this.secret = secret;
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expireMillis = expireSeconds * 1000L;
     }
 
@@ -35,13 +41,14 @@ public final class JwtUtil {
                 .setClaims(claims)
                 .setIssuedAt(now)
                 .setExpiration(new Date(now.getTime() + expireMillis))
-                .signWith(SignatureAlgorithm.HS256, secret)
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
     public Long parseUserId(String token) {
-        Claims claims = Jwts.parser()
-                .setSigningKey(secret)
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
         Object uid = claims.get("uid");

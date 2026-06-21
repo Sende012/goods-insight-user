@@ -2,10 +2,12 @@ package com.sende.user.api.dto;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
-public class LoginResDTO {
+public class LoginResDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String token;
     private Long userId;
     private String username;
