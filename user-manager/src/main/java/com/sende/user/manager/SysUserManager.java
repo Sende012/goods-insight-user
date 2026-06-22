@@ -60,6 +60,15 @@ public class SysUserManager {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    public int updatePassword(Long userId, String encodedPassword) {
+        SysUserBO upd = new SysUserBO();
+        upd.setId(userId);
+        upd.setPassword(encodedPassword);
+        upd.setUpdatedBy(String.valueOf(userId));
+        return update(upd);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
     public int softDelete(Long id, String updatedBy) {
         return sysUserMapper.softDelete(id, updatedBy);
     }

@@ -2,17 +2,23 @@ package com.sende.user.service.impl;
 
 import com.sende.user.api.AuthService;
 import com.sende.user.api.WorkspaceService;
+import com.sende.user.api.dto.ForgotPasswordReqDTO;
 import com.sende.user.api.dto.LoginReqDTO;
 import com.sende.user.api.dto.LoginResDTO;
+import com.sende.user.api.dto.ResetPasswordReqDTO;
 import com.sende.user.api.dto.WorkspaceResDTO;
+import com.sende.user.dao.dataobject.PasswordResetCodeDO;
+import com.sende.user.manager.PasswordResetCodeManager;
 import com.sende.user.manager.SysUserManager;
 import com.sende.user.manager.bo.SysUserBO;
+import com.sende.user.service.util.EmailService;
 import com.sende.user.service.util.JwtUtil;
 import com.sende.user.service.util.PasswordUtil;
 import org.apache.dubbo.config.annotation.DubboService;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.Random;
 
 /**
  * 登录认证服务（Dubbo RPC）
@@ -23,14 +29,22 @@ import java.util.List;
 @DubboService
 public class AuthServiceImpl implements AuthService {
 
+    private static final Random RANDOM = new Random();
+
     @Resource
     private SysUserManager sysUserManager;
+
+    @Resource
+    private PasswordResetCodeManager passwordResetCodeManager;
 
     @Resource
     private WorkspaceService workspaceService;
 
     @Resource
     private JwtUtil jwtUtil;
+
+    @Resource
+    private EmailService emailService;
 
     @Override
     public LoginResDTO login(LoginReqDTO req) {
@@ -76,5 +90,43 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public Long validateAndGetUserId(String token) {
         return jwtUtil.parseUserId(token);
+    }
+
+    @Override
+    public void sendResetCode(ForgotPasswordReqDTO req) {
+        if (req.getEmail() == null || req.getEmail().isEmpty()) {
+            throw new IllegalArgumentException("email 不能为空");
+        }
+        SysUserBO user = sysUserManager.getByEmail(req.getEmail());
+        if (user == null) {
+            // 安全考虑：邮箱不存在也返回成功，避免被用来探测注册情况
+            return;
+        }
+        String code = String.format("%06d", RANDOM.nextInt(1_000_000));
+        passwordResetCodeManager.create(req.getEmail(), code);
+        emailService.sendResetCode(req.getEmail(), code);
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordReqDTO req) {
+        if (req.getEmail() == null || req.getCode() == null || req.getNewPassword() == null) {
+            throw new IllegalArgumentException("email / code / newPassword 都不能为空");
+        }
+        if (req.getNewPassword().length() < 6) {
+            throw new IllegalArgumentException("新密码至少 6 位");
+        }
+        PasswordResetCodeDO latest = passwordResetCodeManager.findLatestValid(req.getEmail());
+        if (latest == null) {
+            throw new IllegalArgumentException("验证码无效或已过期");
+        }
+        if (!latest.getCode().equals(req.getCode())) {
+            throw new IllegalArgumentException("验证码错误");
+        }
+        SysUserBO user = sysUserManager.getByEmail(req.getEmail());
+        if (user == null) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+        sysUserManager.updatePassword(user.getId(), PasswordUtil.encode(req.getNewPassword()));
+        passwordResetCodeManager.markUsed(latest.getId());
     }
 }

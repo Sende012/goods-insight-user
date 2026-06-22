@@ -14,6 +14,25 @@ spring:
     url: jdbc:mysql://localhost:3306/goods_insight_user?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
     password: ${DB_PASSWORD:}
+  # 邮件服务（密码重置验证码）
+  # 未配置时 EmailService.send 会失败 → resetPassword 链路会报"邮件发送失败"
+  mail:
+    host: ${MAIL_SMTP_HOST:smtp.example.com}
+    port: ${MAIL_SMTP_PORT:465}
+    username: ${MAIL_SMTP_USER:noreply@example.com}
+    password: ${MAIL_SMTP_PASS:change-me}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 # Nacos 配置中心（自定义加载器读取这一段去远程拉 yaml）
 nacos:
@@ -53,6 +72,11 @@ app:
   jwt:
     secret: ${APP_JWT_SECRET:dev-secret-key-please-change-in-production-min-32-chars}
     expire-seconds: 86400
+  # 邮件业务配置
+  email:
+    from: ${MAIL_SMTP_USER:noreply@example.com}
+    from-name: ${MAIL_FROM_NAME:Goods Insight}
+    reset-subject: ${MAIL_RESET_SUBJECT:【Goods Insight】密码重置验证码}
 
 logging:
   level:

@@ -3,10 +3,13 @@ package com.sende.user.controller;
 import com.sende.user.api.AuthService;
 import com.sende.user.api.UserService;
 import com.sende.user.api.WorkspaceService;
+import com.sende.user.api.dto.ForgotPasswordReqDTO;
 import com.sende.user.api.dto.LoginReqDTO;
 import com.sende.user.api.dto.LoginResDTO;
+import com.sende.user.api.dto.ResetPasswordReqDTO;
 import com.sende.user.api.dto.UserReqDTO;
 import com.sende.user.api.dto.UserResDTO;
+import com.sende.user.api.dto.WorkspaceReqDTO;
 import com.sende.user.api.dto.WorkspaceResDTO;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,7 +40,7 @@ public class AuthController {
     @DubboReference
     private WorkspaceService workspaceService;
 
-    /** 注册 */
+    /** 注册（自动建默认 workspace） */
     @PostMapping("/auth/register")
     public Map<String, Object> register(@RequestBody RegisterReq req) {
         UserReqDTO dto = new UserReqDTO();
@@ -45,6 +48,16 @@ public class AuthController {
         dto.setPassword(req.getPassword());
         dto.setEmail(req.getEmail());
         Long userId = userService.create(dto);
+
+        // 自动建默认工作空间（避免下游 product/review 创建时 workspace_id 为 null）
+        WorkspaceReqDTO ws = new WorkspaceReqDTO();
+        ws.setWorkspaceName(req.getUsername() + "'s workspace");
+        ws.setWorkspaceCode("WS_" + userId);
+        ws.setOwnerUserId(userId);
+        ws.setPlanType("FREE");
+        ws.setStatus(1);
+        workspaceService.create(ws);
+
         Map<String, Object> data = new HashMap<>();
         data.put("userId", userId);
         data.put("username", req.getUsername());
@@ -87,6 +100,27 @@ public class AuthController {
         return ok(list);
     }
 
+    /** 发送密码重置验证码 */
+    @PostMapping("/auth/forgot-code")
+    public Map<String, Object> forgotCode(@RequestBody ForgotCodeReq req) {
+        ForgotPasswordReqDTO dto = new ForgotPasswordReqDTO();
+        dto.setEmail(req.getEmail());
+        authService.sendResetCode(dto);
+        // 安全起见：无论邮箱是否存在都返回 ok，避免被用来探测
+        return ok("验证码已发送（如该邮箱已注册）");
+    }
+
+    /** 验证验证码 + 重置密码 */
+    @PostMapping("/auth/reset-password")
+    public Map<String, Object> resetPassword(@RequestBody ResetPasswordReq req) {
+        ResetPasswordReqDTO dto = new ResetPasswordReqDTO();
+        dto.setEmail(req.getEmail());
+        dto.setCode(req.getCode());
+        dto.setNewPassword(req.getNewPassword());
+        authService.resetPassword(dto);
+        return ok("密码已重置，请使用新密码登录");
+    }
+
     private static Map<String, Object> ok(Object data) {
         Map<String, Object> r = new HashMap<>();
         r.put("code", 0);
@@ -119,5 +153,23 @@ public class AuthController {
         public void setUsername(String username) { this.username = username; }
         public String getPassword() { return password; }
         public void setPassword(String password) { this.password = password; }
+    }
+
+    public static class ForgotCodeReq {
+        private String email;
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+    }
+
+    public static class ResetPasswordReq {
+        private String email;
+        private String code;
+        private String newPassword;
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+        public String getCode() { return code; }
+        public void setCode(String code) { this.code = code; }
+        public String getNewPassword() { return newPassword; }
+        public void setNewPassword(String newPassword) { this.newPassword = newPassword; }
     }
 }

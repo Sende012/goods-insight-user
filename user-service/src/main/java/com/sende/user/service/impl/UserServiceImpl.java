@@ -25,8 +25,21 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Long create(UserReqDTO req) {
+        if (req.getUsername() == null || req.getUsername().isEmpty()) {
+            throw new IllegalArgumentException("用户名不能为空");
+        }
+        if (req.getEmail() == null || req.getEmail().isEmpty()) {
+            throw new IllegalArgumentException("邮箱不能为空");
+        }
         if (req.getPassword() == null || req.getPassword().isEmpty()) {
-            throw new IllegalArgumentException("password 不能为空");
+            throw new IllegalArgumentException("密码不能为空");
+        }
+        // 预检：用户名/邮箱唯一（避免依赖 MySQL 唯一约束抛 SQL 异常）
+        if (sysUserManager.getByUsername(req.getUsername()) != null) {
+            throw new IllegalArgumentException("用户名已被占用：" + req.getUsername());
+        }
+        if (sysUserManager.getByEmail(req.getEmail()) != null) {
+            throw new IllegalArgumentException("邮箱已被注册：" + req.getEmail());
         }
         SysUserBO bo = userDtoConverter.toBO(req);
         bo.setPassword(PasswordUtil.encode(req.getPassword()));
