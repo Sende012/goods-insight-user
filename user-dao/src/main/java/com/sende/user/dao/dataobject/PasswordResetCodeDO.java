@@ -6,11 +6,17 @@ import java.util.Date;
  * 密码重置验证码 DO
  */
 public class PasswordResetCodeDO {
+    /** 主键 ID */
     private Long id;
+    /** 接收验证码的邮箱 */
     private String email;
+    /** 验证码 */
     private String code;
+    /** 过期时间 */
     private Date expiresAt;
+    /** 是否已使用（0=未使用，1=已使用） */
     private Integer used;
+    /** 创建时间 */
     private Date createdTime;
 
     public Long getId() { return id; }
